@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle del Visitante{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Detalle del Visitante</h1>
+
+<table class="table">
+    <tr>
+        <th>DNI</th>
+        <td>{{ visitante.dni }}</td>
+    </tr>
+    <tr>
+        <th>Nombres</th>
+        <td>{{ visitante.nombres }}</td>
+    </tr>
+    <tr>
+        <th>Apellido Paterno</th>
+        <td>{{ visitante.apellido_paterno }}</td>
+    </tr>
+    <tr>
+        <th>Apellido Materno</th>
+        <td>{{ visitante.apellido_materno }}</td>
+    </tr>
+    <tr>
+        <th>Sexo</th>
+        <td>{{ visitante.sexo }}</td>
+    </tr>
+    <tr>
+        <th>Edad</th>
+        <td>{{ visitante.edad }}</td>
+    </tr>
+    <tr>
+        <th>Dirección</th>
+        <td>{{ visitante.direccion }}</td>
+    </tr>
+</table>
+
+<a href="{{ url_for('index') }}" class="btn btn-secondary">Regresar</a>
+{% endblock %}

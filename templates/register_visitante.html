@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar Visitante{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Registrar Visitante</h1>
+
+<!-- Botón para iniciar escaneo -->
+<button type="button" class="btn btn-secondary mb-3" id="start-scan">Escanear Código de Barras</button>
+<button type="button" class="btn btn-danger mb-3" id="cancel-scan" style="display:none;">Cancelar Escaneo</button>
+<video id="scanner" style="width:100%; display:none;"></video>
+
+<form method="POST" id="visitor-form">
+    <div class="mb-3">
+        <label for="dni" class="form-label">DNI</label>
+        <div class="input-group">
+            <input type="text" class="form-control" id="dni" name="dni" required pattern="\d{8,8}" title="El DNI debe tener 8 dígitos">
+            <span class="input-group-text" id="search-dni" style="cursor: pointer;">
+                <i class="fas fa-search"></i>
+            </span>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label for="nombres" class="form-label">Nombres</label>
+        <input type="text" class="form-control" id="nombres" name="nombres" required>
+    </div>
+    <div class="mb-3">
+        <label for="apellido_paterno" class="form-label">Apellido Paterno</label>
+        <input type="text" class="form-control" id="apellido_paterno" name="apellido_paterno" required>
+    </div>
+    <div class="mb-3">
+        <label for="apellido_materno" class="form-label">Apellido Materno</label>
+        <input type="text" class="form-control" id="apellido_materno" name="apellido_materno" required>
+    </div>
+    <div class="mb-3">
+        <label for="sexo" class="form-label">Sexo</label>
+        <select class="form-control" id="sexo" name="sexo" required>
+            <option value="M">Masculino</option>
+            <option value="F">Femenino</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="edad" class="form-label">Edad</label>
+        <input type="number" class="form-control" id="edad" name="edad" required>
+    </div>
+    <div class="mb-3">
+        <label for="direccion" class="form-label">Dirección</label>
+        <input type="text" class="form-control" id="direccion" name="direccion" required>
+    </div>
+    <div class="mb-3">
+        <label for="placa" class="form-label">Placa</label>
+        <input type="text" class="form-control" id="placa" name="placa">
+    </div>
+    <div class="mb-3">
+        <label for="playa" class="form-label">Playa de estacionamiento</label>
+        <input type="text" class="form-control" id="playa" name="playa">
+    </div>
+    <div class="mb-3">
+        <label for="destino" class="form-label">Destino</label>
+        <input type="text" class="form-control" id="destino" name="destino" required>
+    </div>
+    <div class="mb-3">
+        <label for="tipo_visita" class="form-label">Visitante</label>
+        <select class="form-control" id="tipo_visita" name="tipo_visita" required>
+            <option value="">Seleccione...</option>
+            <option value="visitante">Visitante</option>
+            <option value="alumno">Alumno</option>
+            <option value="docente">Docente</option>
+            <option value="administrativo">Administrativo</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Registrar Visitante</button>
+</form>
+
+<div id="alert-message" class="alert alert-info mt-3" style="display:none;"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script>
+    async function consultarAPI(dni) {
+        console.log("Consultando API con DNI:", dni);
+        
+        try {
+            const response = await fetch('https://apiperu.dev/api/dni', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer 1dacc4d91780ee7520e406f731c1bcc513c97938460bd5c475994a7c64ab442f'
+                },
+                body: JSON.stringify({ dni: dni })
+            });
+
+            const data = await response.json();
+            console.log("Respuesta de la API:", data);
+
+            if (data.success) {
+                document.getElementById('nombres').value = data.data.nombres || '';
+                document.getElementById('apellido_paterno').value = data.data.apellido_paterno || '';
+                document.getElementById('apellido_materno').value = data.data.apellido_materno || '';
+                document.getElementById('edad').value = calcularEdad(data.data.fecha_nacimiento);
+                document.getElementById('direccion').value = data.data.direccion || '';
+                hideAlert();
+            } else {
+                showAlert('No se encontraron datos para el DNI ingresado: ' + dni);
+            }
+        } catch (error) {
+            console.error('Error al consultar la API:', error);
+            showAlert('Error al consultar la API: ' + error.message);
+        }
+    }
+
+    function showAlert(message) {
+        const alert = document.getElementById('alert-message');
+        alert.innerText = message;
+        alert.style.display = 'block';
+    }
+
+    function hideAlert() {
+        document.getElementById('alert-message').style.display = 'none';
+    }
+
+    function calcularEdad(fecha_nacimiento) {
+        const nacimiento = new Date(fecha_nacimiento);
+        const hoy = new Date();
+        let edad = hoy.getFullYear() - nacimiento.getFullYear();
+        const mes = hoy.getMonth() - nacimiento.getMonth();
+        if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+            edad--;
+        }
+        return edad;
+    }
+
+    function iniciarEscaneo() {
+    // Muestra el elemento de video y el botón de cancelar
+    document.getElementById('scanner').style.display = 'block';
+    document.getElementById('cancel-scan').style.display = 'inline-block';
+
+    // Accede a la cámara
+    navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" } // Cámara trasera
+    })
+    .then(function(stream) {
+        const video = document.querySelector('#scanner');
+        video.srcObject = stream;
+        video.setAttribute('playsinline', ''); // Para iOS
+        video.play();
+
+        // Iniciar Quagga después de que el video esté listo
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: video, // Utiliza el video directamente
+            },
+            decoder: {
+                readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader"]
+            }
+        }, function(err) {
+            if (err) {
+                console.error('Error en Quagga init:', err);
+                alert('Error al iniciar la cámara: ' + err.message);
+                return;
+            }
+            console.log('Cámara iniciada, comenzando la lectura...');
+            Quagga.start();
+        });
+
+        Quagga.onDetected(function(result) {
+            const code = result.codeResult.code;
+            document.getElementById('dni').value = code;
+            Quagga.stop();
+            detenerEscaneo();
+            consultarAPI(code);
+        });
+    })
+    .catch(function(err) {
+        console.error('Error al acceder a la cámara:', err);
+        alert('Error al iniciar la cámara: ' + err.message);
+    });
+}
+
+
+function detenerEscaneo() {
+    Quagga.stop();
+    document.getElementById('scanner').style.display = 'none'; // Asegúrate de que el video se oculte aquí
+    document.getElementById('cancel-scan').style.display = 'none';
+    console.log('Escaneo detenido y cámara ocultada.');
+}
+
+
+    document.getElementById('start-scan').addEventListener('click', iniciarEscaneo);
+    document.getElementById('cancel-scan').addEventListener('click', detenerEscaneo);
+
+    document.getElementById('search-dni').addEventListener('click', async function() {
+        const dni = document.getElementById('dni').value;
+
+        if (dni) {
+            await consultarAPI(dni);
+        } else {
+            alert('Por favor, ingresa un DNI.');
+        }
+    });
+</script>
+{% endblock %}

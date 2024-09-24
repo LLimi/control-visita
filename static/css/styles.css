@@ -1,0 +1,22 @@
+body {
+    background-color: #f8f9fa;
+}
+
+header {
+    margin-bottom: 20px;
+}
+
+footer {
+    margin-top: 20px;
+    padding: 10px 0;
+    background-color: #f1f1f1;
+}
+:root {
+    --primary: #005f99; /* Color principal más parecido al azul de Cisco */
+    --secondary: #6c757d; /* Color secundario */
+    --info: #17a2b8; /* Puedes cambiar otros colores según necesites */
+}
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+body {
+    font-family: 'Poppins', sans-serif;
+}
